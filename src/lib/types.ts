@@ -82,6 +82,14 @@ export interface ExportFile {
   created_at: string;
 }
 
+export interface HealthStatus {
+  status: "ok" | "degraded";
+  database: boolean;
+  queue: boolean;
+  worker_alive: boolean;
+  version: string;
+}
+
 export interface Paged<T> {
   items: T[];
   total: number;

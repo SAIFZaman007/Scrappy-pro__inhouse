@@ -8,6 +8,7 @@
 import type {
   Category,
   ExportFile,
+  HealthStatus,
   Job,
   JobOptions,
   Paged,
@@ -68,6 +69,9 @@ export const api = {
     }),
 
   me: () => request<{ id: string; email: string; is_admin: boolean }>("/auth/me"),
+
+  /** Used to tell a slow crawl apart from "no worker is listening at all". */
+  health: () => request<HealthStatus>("/health"),
 
   sites: () => request<Site[]>("/sites"),
 

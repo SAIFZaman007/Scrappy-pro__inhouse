@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Download, FileSpreadsheet, Square } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Download,
+  FileSpreadsheet,
+  Square,
+} from "lucide-react";
 import EventTape from "../components/EventTape";
 import ResultsTable from "../components/ResultsTable";
 import RunMeter from "../components/RunMeter";
@@ -10,6 +16,9 @@ import { api } from "../lib/api";
 import { bytes } from "../lib/format";
 
 const LIVE = new Set(["queued", "running"]);
+// Give a worker a few seconds to pick the job up before treating "queued" as
+// suspicious - a fast worker legitimately claims a job within milliseconds.
+const STUCK_QUEUED_MS = 8000;
 
 export default function RunPage() {
   const { jobId = "" } = useParams();
@@ -20,13 +29,16 @@ export default function RunPage() {
   const jobQuery = useQuery({
     queryKey: ["job", jobId],
     queryFn: () => api.job(jobId),
-    // Poll while the run is live; stop the moment it settles.
+    // Poll while the run is live; stop the moment it settles. Background-tab
+    // polling stays on (set globally in main.tsx) so this keeps ticking even
+    // if the user switches away - the run itself never depended on the tab.
     refetchInterval: (query) =>
       query.state.data && LIVE.has(query.state.data.status) ? 2000 : false,
   });
 
   const job = jobQuery.data;
   const isLive = job ? LIVE.has(job.status) : false;
+  const isQueued = job?.status === "queued";
 
   const productsQuery = useQuery({
     queryKey: ["products", jobId, page],
@@ -39,6 +51,16 @@ export default function RunPage() {
     queryKey: ["exports", jobId],
     queryFn: () => api.exports(jobId),
     enabled: Boolean(job),
+  });
+
+  // Only relevant while queued: is a worker actually listening? A job can
+  // legitimately sit here for a second or two before being claimed, so this
+  // is gated on both "still queued" and "queued long enough to be suspicious".
+  const healthQuery = useQuery({
+    queryKey: ["health"],
+    queryFn: api.health,
+    enabled: isQueued,
+    refetchInterval: isQueued ? 4000 : false,
   });
 
   const cancel = useMutation({
@@ -61,6 +83,12 @@ export default function RunPage() {
 
   const totalPages = Math.max(1, Math.ceil((productsQuery.data?.total ?? 0) / 50));
   const canExport = job.products_found > 0 && !isLive;
+  const queuedForMs = Date.now() - new Date(job.created_at).getTime();
+  const noWorker =
+    isQueued &&
+    queuedForMs > STUCK_QUEUED_MS &&
+    healthQuery.data !== undefined &&
+    !healthQuery.data.worker_alive;
 
   return (
     <div className="flex flex-col gap-7">
@@ -104,6 +132,23 @@ export default function RunPage() {
         </div>
       </div>
 
+      {noWorker && (
+        <div className="flex items-start gap-3 text-[13px] text-warn bg-warn-soft px-4 py-3 rounded-[3px]">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" aria-hidden />
+          <div>
+            <p className="font-medium">No worker is currently processing jobs.</p>
+            <p className="text-ink-soft mt-0.5">
+              This run will stay queued until one connects. Locally, start it in its
+              own terminal from the <code className="font-mono">backend/</code>{" "}
+              folder:
+            </p>
+            <code className="block font-mono text-[12px] bg-white/60 rounded-[3px] px-2.5 py-1.5 mt-1.5 w-fit">
+              uv run arq app.workers.worker.WorkerSettings
+            </code>
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-[1fr_400px] gap-6 items-start">
         <div className="panel p-5">
           <RunMeter job={job} />
@@ -119,7 +164,9 @@ export default function RunPage() {
 
       {isLive && (
         <p className="text-[13px] text-muted">
-          The run keeps going if you close this tab. Come back from History any time.
+          This run happens on the server, not in your browser. Switching tabs,
+          minimising the window, or closing it entirely will not pause or stop it —
+          come back from History any time to check progress.
         </p>
       )}
 
