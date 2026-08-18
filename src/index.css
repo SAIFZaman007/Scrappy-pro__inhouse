@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/*
+  Scrappy Pro is an instrument, not a marketing site: a control desk an operator
+  sits at to run a collection and walk away with a file. The visual language is
+  borrowed from lab and broadcast equipment - navy chassis, paper-white panels,
+  a single crimson that only ever means "this is live", and a monospace tape that
+  records what the machine did.
+*/
+@theme {
+  --color-ink: #0e1726;
+  --color-ink-soft: #1c2739;
+  --color-paper: #eff2f5;
+  --color-panel: #ffffff;
+  --color-line: #d9dfe7;
+  --color-line-strong: #b9c3d0;
+  --color-muted: #5a6779;
+
+  --color-signal: #a81e3f;
+  --color-signal-soft: #f6e4e9;
+  --color-good: #0b7a6b;
+  --color-good-soft: #e0f0ed;
+  --color-warn: #b4690e;
+  --color-warn-soft: #fbeedd;
+
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-sans: "Public Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-panel: 4px;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Small caps label used above every control group. Structure, not decoration:
+     it names the input the operator is about to touch. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .panel {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--radius-panel);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-signal {
+    background: var(--color-signal);
+    color: #fff;
+  }
+  .btn-signal:hover:not(:disabled) {
+    background: #8d1834;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--color-line-strong);
+    color: var(--color-ink);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-paper);
+  }
+
+  .field {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-panel);
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-panel);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-ink);
+  }
+
+  /* --- Signature: the run tape -------------------------------------------
+     A chart-recorder strip. Each line is one thing the crawler actually did,
+     newest at the bottom, ruled like paper feeding through a machine. */
+  .tape {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.9;
+    background: var(--color-ink);
+    color: #c8d2e0;
+    border-radius: var(--radius-panel);
+    padding: 14px 16px;
+    max-height: 260px;
+    overflow-y: auto;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 22px,
+      rgba(255, 255, 255, 0.04) 22px,
+      rgba(255, 255, 255, 0.04) 23px
+    );
+  }
+
+  .tape-row {
+    display: grid;
+    grid-template-columns: 62px 1fr;
+    gap: 12px;
+  }
+
+  .tape-time {
+    color: #6b7d95;
+  }
+
+  /* Segmented capacity meter: one notch per selected category, filling left
+     to right as each one is finished. */
+  .meter {
+    display: flex;
+    gap: 2px;
+    height: 10px;
+  }
+
+  .meter-notch {
+    flex: 1;
+    background: var(--color-line);
+    border-radius: 1px;
+  }
+  .meter-notch[data-state="done"] {
+    background: var(--color-good);
+  }
+  .meter-notch[data-state="active"] {
+    background: var(--color-signal);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 2px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
