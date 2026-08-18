@@ -43,7 +43,7 @@ export default function SignInPage() {
       </div>
 
       <div className="flex items-center justify-center px-8 py-12">
-        <form onSubmit={submit} className="w-full max-w-[380px] flex flex-col gap-5">
+        <form onSubmit={submit} className="w-full max-w-95 flex flex-col gap-5">
           <div>
             <h2 className="text-[24px]">Sign in</h2>
             <p className="text-muted text-[14px] mt-1">Use your Scrappy Pro account.</p>
